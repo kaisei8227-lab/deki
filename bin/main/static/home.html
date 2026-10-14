@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gothic Duel - HOME</title>
+    
+    <!-- Google Fonts の読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'EB Garamond', serif;
+            background: #080d19;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* 背景レイヤー */
+        .bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 40%, rgba(45, 27, 78, 0.6) 0%, rgba(5, 8, 16, 0.95) 75%),
+                        linear-gradient(135deg, #091224 0%, #03060c 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 粒子アニメーション背景 */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(201, 160, 80, 0.2) 1px, transparent 1px);
+            background-size: 32px 32px;
+            animation: particleMove 20s linear infinite;
+            z-index: 2;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        @keyframes particleMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 320px 640px; }
+        }
+
+        /* UIコンテンツレイヤー */
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px 24px;
+        }
+
+        /* トップヘッダー */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(22, 16, 35, 0.85);
+            padding: 8px 16px 8px 10px;
+            border-radius: 30px;
+            border: 1px solid rgba(201, 160, 80, 0.4);
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .user-info:hover {
+            border-color: #ffd700;
+            box-shadow: 0 0 12px rgba(201, 160, 80, 0.4);
+        }
+
+        .avatar-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2b1a3a, #150b21);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            border: 2px solid #c9a050;
+            box-shadow: 0 0 10px rgba(201, 160, 80, 0.4);
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 14px;
+            font-weight: bold;
+            color: #f1e6cf;
+            letter-spacing: 0.5px;
+        }
+
+        .level-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 3px;
+        }
+
+        .level-text {
+            font-size: 11px;
+            color: #c9a050;
+            font-weight: bold;
+        }
+
+        .level-bar {
+            width: 90px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .level-fill {
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, #8a5a00, #c9a050);
+        }
+
+        /* ヘッダー右側（通貨＆アクションボタン） */
+        .resources {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .resource-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(22, 16, 35, 0.85);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(201, 160, 80, 0.3);
+            backdrop-filter: blur(8px);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .gold { color: #ffd700; }
+        .gem { color: #00f0ff; }
+
+        .btn-icon {
+            background: rgba(22, 16, 35, 0.85);
+            border: 1px solid rgba(201, 160, 80, 0.4);
+            color: #c9a050;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            backdrop-filter: blur(8px);
+        }
+
+        .btn-icon:hover {
+            border-color: #ffd700;
+            transform: scale(1.08);
+            box-shadow: 0 0 12px rgba(201, 160, 80, 0.5);
+            background: rgba(42, 26, 58, 0.9);
+        }
+
+        /* メインコンテンツエリア */
+        .main-content {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-grow: 1;
+            padding-right: 60px;
+        }
+
+        .rank-match-card {
+            background: linear-gradient(135deg, rgba(74, 30, 90, 0.5) 0%, rgba(15, 10, 25, 0.9) 100%);
+            border: 2px solid #c9a050;
+            border-radius: 50%;
+            width: 190px;
+            height: 190px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(201, 160, 80, 0.3);
+        }
+
+        .rank-match-card:hover {
+            transform: scale(1.08);
+            border-color: #ffd700;
+            box-shadow: 0 15px 40px rgba(201, 160, 80, 0.6);
+        }
+
+        .rank-badge {
+            font-size: 40px;
+            margin-bottom: 2px;
+        }
+
+        .rank-name {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 18px;
+            font-weight: 900;
+            color: #f1e6cf;
+            text-shadow: 0 0 8px rgba(201, 160, 80, 0.8);
+        }
+
+        .rank-sub {
+            font-size: 12px;
+            color: #c9a050;
+            margin-top: 2px;
+        }
+
+        /* ボトムナビゲーションバー */
+        .bottom-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background: rgba(15, 10, 25, 0.9);
+            border: 1px solid rgba(201, 160, 80, 0.3);
+            border-radius: 16px;
+            padding: 8px 24px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.7);
+            margin: 0 auto;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #a792ba;
+            transition: all 0.2s;
+            font-size: 13px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav-item .icon {
+            font-size: 22px;
+        }
+
+        .nav-item:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item.active {
+            color: #c9a050;
+            background: linear-gradient(180deg, rgba(201, 160, 80, 0.2) 0%, rgba(201, 160, 80, 0) 100%);
+            border-bottom: 2px solid #c9a050;
+            text-shadow: 0 0 8px rgba(201, 160, 80, 0.6);
+        }
+
+        /* --- モーダル・オーバーレイ共通スタイル --- */
+        .overlay-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 右側メニュー引き出し (画像2枚目再現) */
+        .menu-drawer {
+            position: absolute;
+            right: 0; top: 0;
+            width: 320px; height: 100vh;
+            background: rgba(15, 10, 23, 0.95);
+            border-left: 2px solid #c9a050;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(201, 160, 80, 0.3);
+            padding-bottom: 12px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .menu-grid-btn {
+            background: #181124;
+            border: 1px solid #4a3e56;
+            border-radius: 6px;
+            padding: 12px 5px;
+            text-align: center;
+            color: #d0c4de;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+
+        .menu-grid-btn:hover {
+            border-color: #c9a050;
+            color: #ffffff;
+            background: #2b1a3a;
+        }
+
+        /* ギフトモーダル (画像3枚目再現) */
+        .gift-box {
+            width: 85%;
+            max-width: 650px;
+            height: 400px;
+            background: rgba(15, 10, 25, 0.95);
+            border: 2px solid #c9a050;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 0 30px rgba(201, 160, 80, 0.3);
+        }
+
+        /* ミッションモーダル (画像4枚目再現) */
+        .mission-grid {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .mission-card {
+            width: 170px;
+            height: 200px;
+            background: #181124;
+            border: 1px solid #4a3e56;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Cinzel Decorative', serif;
+            color: #ffd700;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: inset 0 0 15px rgba(201, 160, 80, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer"></div>
+    <div class="particles"></div>
+
+    <div class="ui-layer">
+
+        <!-- ヘッダー -->
+        <header class="header">
+            <div class="user-info" onclick="location.href='profile.html'" title="プロフィールを表示">
+                <div class="avatar-circle">👤</div>
+                <div class="user-details">
+                    <span id="player-name" class="user-name">プレイヤー</span>
+                    <div class="level-bar-container">
+                        <span class="level-text">Lv.1</span>
+                        <div class="level-bar">
+                            <div class="level-fill"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="resources">
+                <div class="resource-item" title="コイン">
+                    <span class="gold">🪙</span>
+                    <span id="coin-count">1000</span>
+                </div>
+                <div class="resource-item" title="ダイヤ">
+                    <span class="gem">💎</span>
+                    <span>0</span>
+                </div>
+                
+                <!-- アイコンボタン群（プレゼント / 巻物ミッション / メニュー） -->
+                <button class="btn-icon" onclick="openGiftModal()" title="ギフト">🎁</button>
+                <button class="btn-icon" onclick="openMissionModal()" title="ミッション">📜</button>
+                <button class="btn-icon" onclick="openMenuDrawer()" title="メニュー">田</button>
+            </div>
+        </header>
+
+        <!-- メインエリア（対戦開始） -->
+        <main class="main-content">
+            <div class="rank-match-card" onclick="startBattle()">
+                <div class="rank-badge">🏆</div>
+                <span class="rank-name">ランクマッチ</span>
+                <span class="rank-sub">対戦を開始する</span>
+            </div>
+        </main>
+
+        <!-- ボトムナビゲーション -->
+        <nav class="bottom-nav">
+            <a href="solo.html" class="nav-item">
+                <span class="icon">📖</span>
+                <span>ソロプレイ</span>
+            </a>
+            <a href="#" class="nav-item active" onclick="startBattle()">
+                <span class="icon">⚔️</span>
+                <span>バトル</span>
+            </a>
+            <a href="deck.html" class="nav-item">
+                <span class="icon">🎴</span>
+                <span>デッキ構築</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <!-- ==========================================
+         モーダル 1: メニュー引き出し (田の字ボタン押下時)
+    ========================================== -->
+    <div id="menu-drawer-overlay" class="overlay-screen" onclick="closeMenuDrawer()">
+        <div class="menu-drawer" onclick="event.stopPropagation()">
+            <div class="drawer-header">
+                <div>
+                    <div style="font-size: 16px; font-weight: bold; color: #c9a050;" id="drawer-username">プレイヤー</div>
+                    <div style="font-size: 11px; color: #a792ba;" id="drawer-rank">Rank Master 1</div>
+                </div>
+                <button class="btn-icon" onclick="closeMenuDrawer()">✕</button>
+            </div>
+
+            <div class="menu-grid">
+                <div class="menu-grid-btn" onclick="location.href='profile.html'"><span>👤</span><span>プロフィール</span></div>
+                <div class="menu-grid-btn" onclick="alert('ランキング未実装')"><span>🏆</span><span>ランキング</span></div>
+                <div class="menu-grid-btn" onclick="alert('アチーブメント未実装')"><span>📜</span><span>アチーブメント</span></div>
+                <div class="menu-grid-btn" onclick="alert('リプレイ未実装')"><span>🎥</span><span>リプレイ</span></div>
+                <div class="menu-grid-btn" onclick="alert('デッキ紹介未実装')"><span>🎴</span><span>デッキ紹介</span></div>
+                <div class="menu-grid-btn" onclick="alert('設定画面未実装')"><span>⚙️</span><span>設定</span></div>
+            </div>
+
+            <button class="btn-icon" style="width: 100%; margin-top: auto; border-radius: 6px; font-size: 13px;" onclick="logout()">ログアウト</button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         モーダル 2: ギフト (プレゼントボタン押下時)
+    ========================================== -->
+    <div id="gift-modal" class="overlay-screen">
+        <div class="gift-box">
+            <div style="font-family: 'Cinzel Decorative', serif; color: #c9a050; font-size: 20px;">GIFT</div>
+            <div style="color: #a792ba; margin-top: 30px;">ギフトはすべて受け取り済みです。</div>
+            <button class="btn-icon" style="width: 100%; margin-top: auto; border-radius: 6px; font-size: 13px;" onclick="closeGiftModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         モーダル 3: ミッション (巻物ボタン押下時)
+    ========================================== -->
+    <div id="mission-modal" class="overlay-screen">
+        <div class="gift-box" style="height: 440px;">
+            <div style="font-family: 'Cinzel Decorative', serif; color: #c9a050; font-size: 20px;">TODAY'S MISSION</div>
+            <div class="mission-grid">
+                <div class="mission-card">CLEAR</div>
+                <div class="mission-card">CLEAR</div>
+                <div class="mission-card">CLEAR</div>
+            </div>
+            <div style="font-size: 12px; color: #a792ba; margin-top: 15px;">次のミッション更新まで 19時間0分</div>
+            <button class="btn-icon" style="width: 100%; margin-top: 15px; border-radius: 6px; font-size: 13px;" onclick="closeMissionModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- ランク計算ユーティリティ -->
+    <script src="js/rank_util.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedUser = localStorage.getItem('user');
+            if (!storedUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const user = JSON.parse(storedUser);
+                const userMp = user.mp || 5877;
+                const rankInfo = typeof getRankInfo === 'function' ? getRankInfo(userMp) : { name: 'Master 1', icon: '🏆' };
+
+                // UIへの値適用
+                document.getElementById('player-name').innerText = user.username || 'プレイヤー';
+                document.getElementById('drawer-username').innerText = user.username || 'プレイヤー';
+                document.getElementById('drawer-rank').innerText = 'Rank ' + rankInfo.name;
+
+                const rankNameEl = document.querySelector('.rank-name');
+                const rankBadgeEl = document.querySelector('.rank-badge');
+                const rankSubEl = document.querySelector('.rank-sub');
+
+                if (rankNameEl) rankNameEl.innerText = rankInfo.name;
+                if (rankBadgeEl) rankBadgeEl.innerText = rankInfo.icon;
+                if (rankSubEl) rankSubEl.innerText = `MP ${userMp}`;
+
+            } catch (e) {
+                document.getElementById('player-name').innerText = 'プレイヤー';
+            }
+        });
+
+        // 画面遷移・モーダル操作用関数
+        function startBattle() {
+            window.location.href = 'rank_match.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        function openMenuDrawer() { document.getElementById('menu-drawer-overlay').style.display = 'flex'; }
+        function closeMenuDrawer() { document.getElementById('menu-drawer-overlay').style.display = 'none'; }
+        function openGiftModal() { document.getElementById('gift-modal').style.display = 'flex'; }
+        function closeGiftModal() { document.getElementById('gift-modal').style.display = 'none'; }
+        function openMissionModal() { document.getElementById('mission-modal').style.display = 'flex'; }
+        function closeMissionModal() { document.getElementById('mission-modal').style.display = 'none'; }
+    </script>
+</body>
+</html>

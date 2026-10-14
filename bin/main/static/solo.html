@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Gothic Duel - VS AI ソロ対戦</title>
+    
+    <!-- Google Fonts の読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            font-family: 'EB Garamond', serif;
+            background: #0d0914;
+            background-image: radial-gradient(circle at 50% 30%, rgba(45, 27, 78, 0.4) 0%, transparent 70%),
+                              linear-gradient(to bottom, #09050d, #120a1c);
+            color: #e0d8e8;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        h2, h3, .card-name { font-family: 'Cinzel Decorative', serif; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(22, 16, 35, 0.9);
+            border: 1px solid #4a3e56;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        }
+        h2 { color: #c9a050; text-shadow: 0 0 8px rgba(201, 160, 80, 0.3); }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-grow: 1;
+            margin: 10px 0;
+            justify-content: center;
+        }
+
+        .zone {
+            background: rgba(22, 16, 35, 0.7);
+            border: 1px dashed #4a3e56;
+            border-radius: 8px;
+            min-height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(15, 10, 23, 0.8);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid #3a2b47;
+        }
+        .hp { color: #2ecc71; text-shadow: 0 0 5px rgba(46, 204, 113, 0.4); }
+        .pp { color: #00d4ff; text-shadow: 0 0 5px rgba(0, 212, 255, 0.4); }
+        .ep { color: #f1c40f; text-shadow: 0 0 5px rgba(241, 196, 15, 0.4); }
+
+        /* カードデザイン */
+        .card {
+            background: linear-gradient(145deg, #181124, #0f0a17);
+            border: 1px solid #6c5383;
+            border-radius: 6px;
+            width: 85px;
+            height: 120px;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+        }
+        .card:hover { transform: translateY(-4px); border-color: #c9a050; box-shadow: 0 0 10px rgba(201, 160, 80, 0.4); }
+        
+        /* 選択中のカード枠 */
+        .card.selected { border: 2px solid #2ecc71 !important; box-shadow: 0 0 12px #2ecc71 !important; }
+        
+        /* 進化状態のカード */
+        .card.evolved {
+            border: 2px solid #f1c40f !important;
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.8) !important;
+            background: linear-gradient(145deg, #2b1f0d, #140d05);
+        }
+
+        .card-cost {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: #c9a050;
+            color: #0d0914;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            font-weight: bold;
+            font-size: 11px;
+            font-family: 'Cinzel Decorative', serif;
+        }
+        .card-name {
+            margin-top: 18px;
+            font-size: 11px;
+            color: #f1e6cf;
+            line-height: 1.2;
+        }
+        .card-stats {
+            position: absolute;
+            bottom: 6px;
+            width: 100%;
+            left: 0;
+            font-size: 12px;
+            color: #e0d8e8;
+            font-weight: bold;
+        }
+        .card-rush {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 10px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        /* アクション操作バー */
+        .controls { display: flex; justify-content: center; gap: 15px; align-items: center; }
+        .btn {
+            font-family: 'EB Garamond', serif;
+            font-size: 15px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #2b1a3a 0%, #150b21 100%);
+            color: #c9a050;
+            border: 1px solid #c9a050;
+            padding: 8px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+        }
+        .btn:hover { background: #c9a050; color: #0d0914; box-shadow: 0 0 10px rgba(201, 160, 80, 0.6); }
+        .btn-evo { border-color: #f1c40f; color: #f1c40f; }
+        .btn-evo:hover { background: #f1c40f; color: #0d0914; }
+        .btn-back { border-color: #7f8c8d; color: #bdc3c7; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>⚔ Gothic Duel - VS AI</h2>
+        <button class="btn btn-back" onclick="location.href='/home.html'">降参して戻る</button>
+    </header>
+
+    <div class="field">
+        <!-- AI プレイヤー情報 & 盤面 -->
+        <div class="player-info">
+            <span>相手 (AI)</span>
+            <span class="hp">HP: <span id="ai-hp">20</span></span>
+            <span class="pp">PP: <span id="ai-pp">1/1</span></span>
+            <span class="ep">EP: <span id="ai-ep">2</span></span>
+        </div>
+        <div id="ai-board" class="zone"></div>
+
+        <!-- ターン状態 & 操作制御 -->
+        <div class="controls">
+            <h3 id="turn-indicator" style="color: #2ecc71;">YOUR TURN</h3>
+            <button id="btn-evolve" class="btn btn-evo" onclick="evolveSelectedCard()" style="display:none;">⚡ 進化させる</button>
+            <button class="btn" onclick="endTurn()">ターン終了</button>
+        </div>
+
+        <!-- 自分 盤面 & プレイヤー情報 & 手札 -->
+        <div id="my-board" class="zone"></div>
+        <div class="player-info">
+            <span>あなた</span>
+            <span class="hp">HP: <span id="my-hp">20</span></span>
+            <span class="pp">PP: <span id="my-pp">1/1</span></span>
+            <span class="ep">EP: <span id="my-ep">2</span></span>
+        </div>
+        <div id="my-hand" class="zone"></div>
+    </div>
+
+    <script>
+        let myDeck = [];
+        let myHand = [], myBoard = [];
+        let aiHand = [], aiBoard = [];
+        
+        let myHp = 20, aiHp = 20;
+        let myMaxPp = 1, myPp = 1;
+        let aiMaxPp = 1, aiPp = 1;
+        let myEp = 2, aiEp = 2; // 進化ポイント（EP）
+        let isMyTurn = true;
+
+        let selectedBoardIndex = null; // 攻撃・進化対象として選択中の自陣フォロワーのインデックス
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 保存済みデッキのロード
+            const savedDeck = localStorage.getItem('userDeck');
+            if (savedDeck) {
+                try { myDeck = JSON.parse(savedDeck); } catch(e) { myDeck = []; }
+            }
+            if (!myDeck || myDeck.length === 0) {
+                myDeck = [
+                    { id: 1, name: '暗黒の騎士', cost: 1, attack: 1, defense: 2 },
+                    { id: 2, name: '月影の魔導士', cost: 2, attack: 2, defense: 2 },
+                    { id: 3, name: '血族の君主', cost: 3, attack: 3, defense: 3 },
+                    { id: 4, name: '漆黒の竜', cost: 5, attack: 5, defense: 5 }
+                ];
+            }
+
+            // 初期手札3枚引き
+            for(let i=0; i<3; i++) drawCard();
+            
+            // AI 初期手札のセット
+            aiHand = [
+                { id: 90, name: '屍鬼', cost: 1, attack: 1, defense: 2 },
+                { id: 91, name: 'ガーゴイル', cost: 2, attack: 2, defense: 3 },
+                { id: 92, name: '吸血コウモリ', cost: 3, attack: 3, defense: 2 }
+            ];
+
+            render();
+        });
+
+        // ドロー処理
+        function drawCard() {
+            if (myDeck.length > 0 && myHand.length < 5) {
+                const randomIndex = Math.floor(Math.random() * myDeck.length);
+                myHand.push({ ...myDeck[randomIndex] });
+            }
+        }
+
+        // 手札からカードを場に出す
+        function playCard(handIndex) {
+            if (!isMyTurn) return;
+            const card = myHand[handIndex];
+            if (myPp < card.cost) return alert('PPが不足しています！');
+            if (myBoard.length >= 5) return alert('場のカードは最大5枚までです！');
+
+            myPp -= card.cost;
+            // 場に出したターンは攻撃不能（canAttack: false, evolved: false）
+            myBoard.push({ ...card, canAttack: false, evolved: false, hasRushed: false });
+            myHand.splice(handIndex, 1);
+            
+            selectedBoardIndex = null;
+            render();
+        }
+
+        // 自分の盤面カードの選択（攻撃準備・進化対象選択）
+        function selectMyBoardCard(index) {
+            if (!isMyTurn) return;
+            selectedBoardIndex = (selectedBoardIndex === index) ? null : index;
+            render();
+        }
+
+        // 【進化機能】選択中の自陣フォロワーを進化させる
+        function evolveSelectedCard() {
+            if (selectedBoardIndex === null || !isMyTurn) return;
+            if (myEp <= 0) return alert('EP（進化ポイント）が足りません！');
+
+            const card = myBoard[selectedBoardIndex];
+            if (card.evolved) return alert('このカードは既に進化しています！');
+
+            // 進化処理
+            myEp -= 1;
+            card.evolved = true;
+            card.attack += 2; // ステータス上昇 (+2/+2)
+            card.defense = (card.defense || card.hp || 1) + 2;
+            card.canAttack = true; // 突進効果（出したターンでも即時攻撃可能）
+            card.hasRushed = true;
+
+            alert(`${card.name} が進化！ (攻撃力+2 / 体力+2 / 突進獲得)`);
+            render();
+        }
+
+        // 相手のリーダー（HP）へ攻撃
+        function attackAiLeader() {
+            if (selectedBoardIndex === null || !isMyTurn) return;
+            const card = myBoard[selectedBoardIndex];
+
+            if (!card.canAttack) return alert('このカードは今ターン攻撃できません！');
+
+            aiHp -= card.attack;
+            card.canAttack = false; // 1ターン1回攻撃
+            selectedBoardIndex = null;
+
+            alert(`${card.name} の直接攻撃！ AIに ${card.attack} ダメージ！`);
+            checkWin();
+            render();
+        }
+
+        // 相手フォロワーへの戦闘攻撃
+        function attackAiFollower(targetIndex) {
+            if (selectedBoardIndex === null || !isMyTurn) return;
+            const attacker = myBoard[selectedBoardIndex];
+            const defender = aiBoard[targetIndex];
+
+            if (!attacker.canAttack) return alert('このカードは今ターン攻撃できません！');
+
+            // ダメージ相互計算
+            defender.defense -= attacker.attack;
+            attacker.defense -= defender.attack;
+
+            attacker.canAttack = false;
+            selectedBoardIndex = null;
+
+            // 破壊判定
+            if (defender.defense <= 0) aiBoard.splice(targetIndex, 1);
+            if (attacker.defense <= 0) myBoard.splice(myBoard.indexOf(attacker), 1);
+
+            render();
+        }
+
+        // ターン終了
+        function endTurn() {
+            if (!isMyTurn) return;
+            isMyTurn = false;
+            selectedBoardIndex = null;
+            
+            document.getElementById('turn-indicator').innerText = "AI TURN";
+            document.getElementById('turn-indicator').style.color = "#e74c3c";
+
+            setTimeout(processAiTurn, 1000);
+        }
+
+        // CPU（AI）の思考ロジック
+        function processAiTurn() {
+            aiMaxPp = Math.min(10, aiMaxPp + 1);
+            aiPp = aiMaxPp;
+
+            // 召喚可能状態のリセット
+            aiBoard.forEach(card => card.canAttack = true);
+
+            // 1. AIカードプレイ
+            for (let i = aiHand.length - 1; i >= 0; i--) {
+                if (aiHand[i].cost <= aiPp && aiBoard.length < 5) {
+                    aiPp -= aiHand[i].cost;
+                    aiBoard.push({ ...aiHand[i], canAttack: false, evolved: false });
+                    aiHand.splice(i, 1);
+                }
+            }
+
+            // 2. AIの進化思考 (盤面に未進化カードがあり、EPがあれば確率で進化)
+            if (aiEp > 0 && aiBoard.length > 0) {
+                const targetCard = aiBoard.find(c => !c.evolved);
+                if (targetCard && Math.random() > 0.3) {
+                    aiEp -= 1;
+                    targetCard.evolved = true;
+                    targetCard.attack += 2;
+                    targetCard.defense = (targetCard.defense || targetCard.hp || 1) + 2;
+                    targetCard.canAttack = true;
+                }
+            }
+            render();
+
+            // 3. AIの攻撃処理 (1秒後)
+            setTimeout(() => {
+                aiBoard.forEach(card => {
+                    if (card.canAttack) {
+                        myHp -= card.attack;
+                    }
+                });
+                checkWin();
+
+                // 自分のターン開始準備
+                myMaxPp = Math.min(10, myMaxPp + 1);
+                myPp = myMaxPp;
+                
+                // 自分の盤面カードを攻撃可能状態にする
+                myBoard.forEach(c => c.canAttack = true);
+                
+                drawCard();
+                isMyTurn = true;
+                
+                document.getElementById('turn-indicator').innerText = "YOUR TURN";
+                document.getElementById('turn-indicator').style.color = "#2ecc71";
+                render();
+            }, 1000);
+        }
+
+		// 勝敗判定 & バックエンド連動
+		function checkWin() {
+		    const user = JSON.parse(localStorage.getItem('user') || '{}');
+		    const username = user.username || 'guest';
+
+		    if (aiHp <= 0) {
+		        saveMatchResult(username, 'WIN');
+		        alert('🎉 VICTORY! 勝利を収めました！');
+		        location.href = '/home.html';
+		    } else if (myHp <= 0) {
+		        saveMatchResult(username, 'LOSE');
+		        alert('💀 DEFEAT... 敗北しました');
+		        location.href = '/home.html';
+		    }
+		}
+
+		// 勝敗APIの呼び出し
+		function saveMatchResult(username, result) {
+		    fetch('/api/game/result', {
+		        method: 'POST',
+		        headers: { 'Content-Type': 'application/json' },
+		        body: JSON.stringify({
+		            username: username,
+		            result: result
+		        })
+		    })
+		    .then(res => res.json())
+		    .then(data => console.log('戦績保存レスポンス:', data))
+		    .catch(err => console.error('戦績保存エラー:', err));
+		}
+
+        // 画面のレンダリング
+        function render() {
+            document.getElementById('my-hp').innerText = myHp;
+            document.getElementById('ai-hp').innerText = Math.max(0, aiHp);
+            document.getElementById('my-pp').innerText = `${myPp}/${myMaxPp}`;
+            document.getElementById('ai-pp').innerText = `${aiPp}/${aiMaxPp}`;
+            document.getElementById('my-ep').innerText = myEp;
+            document.getElementById('ai-ep').innerText = aiEp;
+
+            // 進化ボタンの表示制御
+            const evoBtn = document.getElementById('btn-evolve');
+            if (selectedBoardIndex !== null && myBoard[selectedBoardIndex] && !myBoard[selectedBoardIndex].evolved && myEp > 0) {
+                evoBtn.style.display = 'inline-block';
+            } else {
+                evoBtn.style.display = 'none';
+            }
+
+            // AIのリーダー選択（直接攻撃ターゲット）
+            const aiInfoEl = document.querySelector('.player-info');
+            aiInfoEl.onclick = () => attackAiLeader();
+            aiInfoEl.style.cursor = (selectedBoardIndex !== null) ? 'pointer' : 'default';
+
+            // 自分の手札描画
+            const handEl = document.getElementById('my-hand');
+            handEl.innerHTML = '';
+            myHand.forEach((card, i) => {
+                const el = document.createElement('div');
+                el.className = 'card';
+                el.onclick = () => playCard(i);
+                el.innerHTML = `
+                    <div class="card-cost">${card.cost}</div>
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-stats">⚔${card.attack} / ❤${card.defense||card.hp||1}</div>
+                `;
+                handEl.appendChild(el);
+            });
+
+            // 自分の盤面描画
+            const myBoardEl = document.getElementById('my-board');
+            myBoardEl.innerHTML = '';
+            myBoard.forEach((card, i) => {
+                const el = document.createElement('div');
+                el.className = `card ${selectedBoardIndex === i ? 'selected' : ''} ${card.evolved ? 'evolved' : ''}`;
+                el.onclick = () => selectMyBoardCard(i);
+                el.innerHTML = `
+                    ${card.hasRushed ? '<div class="card-rush">突進</div>' : ''}
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-stats">⚔${card.attack} / ❤${card.defense||card.hp||1}</div>
+                `;
+                myBoardEl.appendChild(el);
+            });
+
+            // AIの盤面描画
+            const aiBoardEl = document.getElementById('ai-board');
+            aiBoardEl.innerHTML = '';
+            aiBoard.forEach((card, i) => {
+                const el = document.createElement('div');
+                el.className = `card ${card.evolved ? 'evolved' : ''}`;
+                el.onclick = () => attackAiFollower(i);
+                el.innerHTML = `
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-stats">⚔${card.attack} / ❤${card.defense||card.hp||1}</div>
+                `;
+                aiBoardEl.appendChild(el);
+            });
+        }
+    </script>
+</body>
+</html>

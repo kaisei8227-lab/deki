@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gothic Duel - バトル</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            font-family: 'EB Garamond', serif;
+            background: #0d120a;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 盤面背景 */
+        .battle-board {
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 50%, #2a3a20 0%, #0a1107 80%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px 20px;
+            position: relative;
+        }
+
+        /* --- 左上：メニューボタン ＆ カード詳細 --- */
+        .top-left-ui {
+            position: absolute;
+            top: 15px; left: 15px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .btn-menu {
+            width: 40px; height: 40px;
+            background: rgba(22, 16, 35, 0.85);
+            border: 1px solid #c9a050;
+            color: #c9a050;
+            border-radius: 6px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.6);
+        }
+
+        /* 左上カード詳細パネル */
+        .card-detail-panel {
+            width: 260px;
+            background: rgba(15, 10, 25, 0.9);
+            border: 1px solid #c9a050;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            display: none;
+        }
+        .detail-name { font-family: 'Cinzel Decorative', serif; color: #f1e6cf; font-size: 14px; font-weight: bold; }
+        .detail-class { font-size: 11px; color: #a792ba; margin-bottom: 6px; }
+        .detail-desc { font-size: 12px; color: #e0d8e8; margin-bottom: 10px; line-height: 1.3; }
+        .btn-evolve {
+            flex: 1; background: linear-gradient(135deg, #8a5a00, #c9a050);
+            border: none; color: #000; font-weight: bold; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px;
+        }
+
+        /* --- プレイヤー＆相手 情報エリア --- */
+        .player-status-bar {
+            display: flex; align-items: center; justify-content: center; gap: 15px;
+        }
+        .avatar-frame {
+            width: 60px; height: 60px; border-radius: 50%;
+            border: 2px solid #c9a050; background: #1a1028;
+            display: flex; justify-content: center; align-items: center; font-size: 28px;
+            position: relative;
+        }
+        .hp-badge {
+            position: absolute; bottom: -5px; right: -5px;
+            background: #b32400; color: #fff; border-radius: 50%;
+            width: 26px; height: 26px; font-weight: bold; font-size: 13px;
+            display: flex; justify-content: center; align-items: center; border: 1px solid #fff;
+        }
+        .ep-container { display: flex; gap: 4px; }
+        .ep-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #c9a050; background: #333; }
+        .ep-dot.active { background: #ffd700; box-shadow: 0 0 6px #ffd700; }
+
+        /* --- 盤面 (Field) --- */
+        .field-area {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px;
+        }
+        .card-row {
+            display: flex; justify-content: center; gap: 15px; min-height: 110px;
+        }
+        .field-card {
+            width: 80px; height: 110px; background: linear-gradient(145deg, #1f162e, #0d0814);
+            border: 2px solid #6c5383; border-radius: 6px; position: relative;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 6px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .field-card.selected { border-color: #00f0ff !important; box-shadow: 0 0 15px #00f0ff !important; }
+
+        /* ★ 状態別エフェクト枠（ Worlds Beyond 仕様 ） */
+        .field-card.storm { border-color: #00f0ff; box-shadow: 0 0 15px rgba(0, 240, 255, 0.9); } /* 青枠：疾走 */
+        .field-card.rush { border-color: #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.9); }  /* 黄枠：突進 */
+        .field-card.ward { border-color: #00ff88; box-shadow: 0 0 15px rgba(0, 255, 136, 0.8); }  /* 緑枠：守護 */
+        .field-card.evolved { border-color: #ffd700; box-shadow: 0 0 12px #ffd700; }
+        .field-card.super-evolved { border-color: #d8b4fe; box-shadow: 0 0 20px rgba(216, 180, 254, 1); background: linear-gradient(145deg, #3b0764, #1e1b4b); } /* 紫/虹：超進化 */
+
+        .card-atk { position: absolute; bottom: 4px; left: 4px; color: #00f0ff; font-weight: bold; font-size: 13px; }
+        .card-hp { position: absolute; bottom: 4px; right: 4px; color: #ff4d4d; font-weight: bold; font-size: 13px; }
+
+        /* --- 手札 ＆ PP・ターン終了ボタン --- */
+        .bottom-ui {
+            display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px;
+        }
+        .hand-container {
+            display: flex; gap: 8px; justify-content: center; flex: 1;
+        }
+        .hand-card {
+            width: 75px; height: 105px; background: #1a1028; border: 1px solid #c9a050;
+            border-radius: 6px; padding: 5px; cursor: pointer; transition: transform 0.2s;
+            position: relative;
+        }
+        .hand-card:hover { transform: translateY(-15px); }
+        .card-cost {
+            position: absolute; top: -5px; left: -5px; background: #c9a050; color: #000;
+            border-radius: 50%; width: 20px; height: 20px; font-weight: bold; font-size: 11px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* ターン終了ボタンエリア */
+        .turn-end-area {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .pp-display { font-family: 'Cinzel Decorative', serif; color: #c9a050; font-weight: bold; font-size: 16px; }
+        .btn-turn-end {
+            width: 90px; height: 90px; border-radius: 50%;
+            background: radial-gradient(circle, #1a5bb8 0%, #0a2558 100%);
+            border: 2px solid #5c96f5; color: #fff; font-family: 'Cinzel Decorative', serif;
+            font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(92,150,245,0.6);
+        }
+
+        /* ===================================================
+           オーバーレイ & カットイン関連
+        =================================================== */
+        .overlay-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+        }
+
+        /* 1: 先攻・後攻決定VS画面 */
+        #vs-cutin-screen { display: flex; flex-direction: column; }
+        .vs-container { display: flex; align-items: center; gap: 40px; }
+        .vs-player-card { text-align: center; }
+        .vs-avatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #c9a050; font-size: 60px; display: flex; justify-content: center; align-items: center; background: #1a1028; margin: 0 auto 10px; }
+        .vs-badge {
+            background: linear-gradient(135deg, #c9a050, #704d08); color: #000;
+            padding: 6px 20px; border-radius: 20px; font-weight: bold; font-size: 18px; margin-top: 10px;
+        }
+
+        /* 2: GAME SET カットイン */
+        #gameset-screen {
+            display: none; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+        }
+        .gameset-text {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 72px;
+            color: #d4af37;
+            text-shadow: 0 0 25px rgba(212, 175, 55, 0.8), 0 0 50px rgba(212, 175, 55, 0.4);
+            letter-spacing: 6px;
+            animation: zoomIn 0.8s ease-out;
+        }
+        @keyframes zoomIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 3: 勝利/敗北 リザルト画面 */
+        #result-screen { display: none; }
+        .result-panel {
+            width: 90%; max-width: 800px;
+            background: rgba(18, 12, 28, 0.92);
+            border: 1px solid #c9a050; border-radius: 12px; padding: 25px;
+            box-shadow: 0 0 35px rgba(201, 160, 80, 0.3); text-align: center;
+            position: relative;
+        }
+        .result-title {
+            font-family: 'Cinzel Decorative', serif; font-size: 48px; font-weight: bold;
+            margin-bottom: 15px; text-shadow: 0 0 15px currentColor;
+        }
+        .result-title.win { color: #ffd700; }
+        .result-title.lose { color: #d0c4de; }
+
+        .result-content-grid {
+            display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: center;
+            margin-bottom: 25px;
+        }
+        .result-avatar {
+            width: 140px; height: 140px; border-radius: 50%; border: 3px solid #c9a050;
+            background: #1a1028; font-size: 70px; display: flex; justify-content: center; align-items: center;
+            margin: 0 auto;
+        }
+        .score-list { text-align: left; font-size: 14px; color: #e0d8e8; line-height: 1.8; }
+        .score-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); }
+
+        .result-btns {
+            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;
+        }
+        .btn-res {
+            padding: 10px 24px; background: #181124; border: 1px solid #6c5383;
+            color: #f1e6cf; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .btn-res:hover { border-color: #c9a050; background: #2b1a3a; color: #c9a050; }
+        .btn-res.main-action {
+            background: linear-gradient(135deg, #1e62d0, #0a2558); border-color: #85b3ff; color: #fff;
+        }
+
+        /* 4: ポーズメニュー (ハンバーガー) */
+        #pause-menu-modal { display: none; }
+        .menu-box {
+            background: rgba(22, 16, 35, 0.95); border: 2px solid #c9a050;
+            border-radius: 12px; padding: 30px; width: 320px; text-align: center;
+            box-shadow: 0 0 30px rgba(201, 160, 80, 0.4);
+        }
+        .menu-title { font-family: 'Cinzel Decorative', serif; color: #c9a050; font-size: 20px; margin-bottom: 20px; }
+        .menu-btn-list { display: flex; flex-direction: column; gap: 12px; }
+        .menu-btn {
+            padding: 10px; background: #181124; border: 1px solid #6c5383;
+            color: #f1e6cf; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;
+        }
+        .menu-btn.retire { background: #6b1d1d; border-color: #ff4d4d; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="battle-board">
+
+    <!-- 左上: メニューボタン & カード詳細 -->
+    <div class="top-left-ui">
+        <button class="btn-menu" onclick="openPauseMenu()">☰</button>
+        
+        <div id="card-detail" class="card-detail-panel">
+            <div id="detail-name" class="detail-name">カード名</div>
+            <div id="detail-class" class="detail-class">[クラス]</div>
+            <div id="detail-desc" class="detail-desc">効果テキストがここに表示されます。</div>
+            
+            <!-- 2段階進化ボタン (+2/+2 / +3/+3 超進化) -->
+            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                <button id="btn-evolve" class="btn-evolve" onclick="executeEvolution(false)">✨ 進化 (+2)</button>
+                <button id="btn-super-evolve" class="btn-evolve" style="background: linear-gradient(135deg, #b83280, #6b46c1); color: #fff;" onclick="executeEvolution(true)">🌟 超進化 (+3)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 相手プレイヤー情報 (クリックでダイレクトアタックテスト可) -->
+    <div class="player-status-bar" onclick="directAttackEnemy()" style="cursor: pointer;" title="クリックで相手リーダーに攻撃（テスト用）">
+        <div class="avatar-circle avatar-frame">
+            🤖
+            <div class="hp-badge" id="enemy-hp">20</div>
+        </div>
+        <div>
+            <div style="font-size: 13px; color: #a792ba;">相手プレイヤー (クリックで攻撃)</div>
+            <div class="ep-container">
+                <div class="ep-dot active"></div><div class="ep-dot active"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フィールド (盤面) -->
+    <div class="field-area">
+        <div class="card-row" id="enemy-board"></div>
+        <div class="card-row" id="my-board"></div>
+    </div>
+
+    <!-- 下部UI: 自分のステータス / 手札 / ターン終了 -->
+    <div class="bottom-ui">
+        <div class="player-status-bar">
+            <div class="avatar-circle avatar-frame">
+                👤
+                <div class="hp-badge" id="my-hp">20</div>
+            </div>
+            <div>
+                <div style="font-size: 13px; color: #c9a050;" id="my-name">あなた</div>
+                <!-- EP初期値2ポイント -->
+                <div class="ep-container" id="my-ep-dots">
+                    <div class="ep-dot active"></div><div class="ep-dot active"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hand-container" id="my-hand"></div>
+
+        <div class="turn-end-area">
+            <div class="pp-display">PP <span id="current-pp">1</span>/<span id="max-pp">1</span></div>
+            <button class="btn-turn-end" onclick="endTurn()">ターン<br>終了</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- 1: マッチング決定・先攻後攻VS画面 -->
+<div id="vs-cutin-screen" class="overlay-screen">
+    <div style="font-family: 'Cinzel Decorative', serif; color: #c9a050; font-size: 32px; margin-bottom: 30px;">
+        MATCH FOUND
+    </div>
+    <div class="vs-container">
+        <div class="vs-player-card">
+            <div class="vs-avatar">👤</div>
+            <div style="color: #f1e6cf; font-weight: bold;" id="vs-my-name">あなた</div>
+            <div class="vs-badge" id="my-turn-order">先攻</div>
+        </div>
+
+        <div style="font-family: 'Cinzel Decorative', serif; font-size: 48px; color: #c9a050;">VS</div>
+
+        <div class="vs-player-card">
+            <div class="vs-avatar">🤖</div>
+            <div style="color: #f1e6cf; font-weight: bold;">相手プレイヤー</div>
+            <div class="vs-badge" id="enemy-turn-order" style="background: #4a3e56; color: #fff;">後攻</div>
+        </div>
+    </div>
+</div>
+
+<!-- 2: 決着時 GAME SET カットイン -->
+<div id="gameset-screen" class="overlay-screen">
+    <div class="gameset-text">GAME SET</div>
+</div>
+
+<!-- 3: 勝利/敗北 リザルト画面 -->
+<div id="result-screen" class="overlay-screen">
+    <div class="result-panel">
+        <div id="result-title" class="result-title win">WIN</div>
+        
+        <div class="result-content-grid">
+            <div class="result-avatar">👤</div>
+            <div class="score-list" id="score-details"></div>
+        </div>
+
+        <div class="result-btns">
+            <button class="btn-res" onclick="location.reload()">再戦する</button>
+            <button class="btn-res" onclick="alert('リプレイ未実装')">リプレイ</button>
+            <button class="btn-res" onclick="alert('ミッション未実装')">ミッション</button>
+            <button class="btn-res main-action" onclick="location.href='home.html'">ホームへ戻る</button>
+        </div>
+    </div>
+</div>
+
+<!-- 4: ポーズメニュー -->
+<div id="pause-menu-modal" class="overlay-screen">
+    <div class="menu-box">
+        <div class="menu-title">バトルメニュー</div>
+        <div class="menu-btn-list">
+            <button class="menu-btn retire" onclick="triggerGameSet(false)">リタイア</button>
+            <button class="menu-btn" onclick="alert('設定画面（未実装）')">設定</button>
+            <button class="menu-btn" onclick="closePauseMenu()">バトルへ戻る</button>
+        </div>
+    </div>
+</div>
+
+<!-- ランク判定用ユーティリティ -->
+<script src="js/rank_util.js"></script>
+
+<script>
+    let myHp = 20, enemyHp = 20;
+    let currentPp = 1, maxPp = 1;
+    let myEp = 2; // EP 2ポイント固定
+    let selectedBoardCard = null;
+
+    let myHandCards = [
+        { id: 101, name: '暗黒の騎士', cost: 1, attack: 2, hp: 2, desc: '【疾走】リーダーを攻撃可能', isStorm: true },
+        { id: 102, name: '月影の魔導士', cost: 2, attack: 3, hp: 2, desc: '【突進】フォロワーを攻撃可能', isRush: true }
+    ];
+    let myBoardCards = [];
+    let enemyBoardCards = [
+        { id: 201, name: 'スケルトン', attack: 1, hp: 1 }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const isFirst = Math.random() < 0.5;
+        document.getElementById('my-turn-order').innerText = isFirst ? '先攻' : '後攻';
+        document.getElementById('enemy-turn-order').innerText = isFirst ? '後攻' : '先攻';
+
+        setTimeout(() => {
+            document.getElementById('vs-cutin-screen').style.display = 'none';
+        }, 2500);
+
+        renderAll();
+    });
+
+    // 画面全体の再描画
+    function renderAll() {
+        document.getElementById('my-hp').innerText = myHp;
+        document.getElementById('enemy-hp').innerText = enemyHp;
+        document.getElementById('current-pp').innerText = currentPp;
+        document.getElementById('max-pp').innerText = maxPp;
+
+        // 手札描画
+        const handEl = document.getElementById('my-hand');
+        handEl.innerHTML = '';
+        myHandCards.forEach((card, idx) => {
+            const el = document.createElement('div');
+            el.className = 'hand-card';
+            el.onclick = () => playCard(idx);
+            el.innerHTML = `
+                <div class="card-cost">${card.cost}</div>
+                <div style="font-size: 11px; font-weight: bold; margin-top: 15px; color: #f1e6cf;">${card.name}</div>
+                <div style="font-size: 11px; color: #a792ba; position: absolute; bottom: 4px;">⚔${card.attack} ❤${card.hp}</div>
+            `;
+            handEl.appendChild(el);
+        });
+
+        // 自分盤面描画（状態別エフェクト枠クラス適用）
+        const myBoardEl = document.getElementById('my-board');
+        myBoardEl.innerHTML = '';
+        myBoardCards.forEach((card) => {
+            const el = document.createElement('div');
+            
+            let classes = ['field-card'];
+            if (card.isSuperEvolved) classes.push('super-evolved');
+            else if (card.isEvolved) classes.push('evolved');
+            
+            if (card.isStorm) classes.push('storm');   // 青枠：疾走
+            else if (card.isRush) classes.push('rush'); // 黄枠：突進
+            
+            if (card.isWard) classes.push('ward');      // 緑枠：守護
+            if (selectedBoardCard === card) classes.push('selected');
+
+            el.className = classes.join(' ');
+            el.onclick = () => selectMyBoardCard(card);
+            el.innerHTML = `
+                <div style="font-size: 11px; font-weight: bold; color: #f1e6cf;">${card.name}</div>
+                <div class="card-atk">⚔ ${card.attack}</div>
+                <div class="card-hp">❤ ${card.hp}</div>
+            `;
+            myBoardEl.appendChild(el);
+        });
+
+        // 相手盤面描画
+        const enemyBoardEl = document.getElementById('enemy-board');
+        enemyBoardEl.innerHTML = '';
+        enemyBoardCards.forEach((card, idx) => {
+            const el = document.createElement('div');
+            el.className = 'field-card';
+            el.onclick = () => attackEnemyCard(idx);
+            el.innerHTML = `
+                <div style="font-size: 11px; font-weight: bold; color: #f1e6cf;">${card.name}</div>
+                <div class="card-atk">⚔ ${card.attack}</div>
+                <div class="card-hp">❤ ${card.hp}</div>
+            `;
+            enemyBoardEl.appendChild(el);
+        });
+    }
+
+    // カードをプレイ
+    function playCard(index) {
+        const card = myHandCards[index];
+        if (currentPp < card.cost) return alert('PPが足りません！');
+        
+        currentPp -= card.cost;
+        myBoardCards.push(card);
+        myHandCards.splice(index, 1);
+        renderAll();
+    }
+
+    // 自分の盤面カードを選択
+    function selectMyBoardCard(card) {
+        selectedBoardCard = card;
+        const detailPanel = document.getElementById('card-detail');
+        detailPanel.style.display = 'block';
+        document.getElementById('detail-name').innerText = card.name;
+        document.getElementById('detail-desc').innerText = card.desc || '効果なし';
+        
+        const btnEvolve = document.getElementById('btn-evolve');
+        const btnSuper = document.getElementById('btn-super-evolve');
+
+        if (card.isSuperEvolved || myEp <= 0) {
+            btnEvolve.style.display = 'none';
+            btnSuper.style.display = 'none';
+        } else if (card.isEvolved) {
+            btnEvolve.style.display = 'none';
+            btnSuper.style.display = 'block';
+        } else {
+            btnEvolve.style.display = 'block';
+            btnSuper.style.display = 'block';
+        }
+
+        renderAll();
+    }
+
+    // ★ 進化 / 超進化の実行処理 (+2/+2 または +3/+3)
+    function executeEvolution(isSuper) {
+        if (!selectedBoardCard || myEp <= 0) return;
+        myEp--;
+
+        if (isSuper) {
+            selectedBoardCard.isSuperEvolved = true;
+            selectedBoardCard.isEvolved = true;
+            selectedBoardCard.attack += 3;
+            selectedBoardCard.hp += 3;
+            selectedBoardCard.name = '🌟 ' + selectedBoardCard.name;
+        } else {
+            selectedBoardCard.isEvolved = true;
+            selectedBoardCard.attack += 2;
+            selectedBoardCard.hp += 2;
+        }
+
+        // EPドットの更新
+        const dots = document.querySelectorAll('#my-ep-dots .ep-dot');
+        if (dots[myEp]) dots[myEp].classList.remove('active');
+
+        document.getElementById('card-detail').style.display = 'none';
+        renderAll();
+    }
+
+    // 相手カードへの攻撃
+    function attackEnemyCard(enemyIdx) {
+        if (!selectedBoardCard) return;
+        const enemyCard = enemyBoardCards[enemyIdx];
+
+        enemyCard.hp -= selectedBoardCard.attack;
+        selectedBoardCard.hp -= enemyCard.attack;
+
+        if (enemyCard.hp <= 0) enemyBoardCards.splice(enemyIdx, 1);
+        if (selectedBoardCard.hp <= 0) {
+            const myIdx = myBoardCards.indexOf(selectedBoardCard);
+            if (myIdx >= 0) myBoardCards.splice(myIdx, 1);
+        }
+
+        selectedBoardCard = null;
+        document.getElementById('card-detail').style.display = 'none';
+        renderAll();
+    }
+
+    // 相手リーダーへの直接攻撃（疾走持ちなどの判定）
+    function directAttackEnemy() {
+        if (!selectedBoardCard) return alert('攻撃するフォロワーを選択してください！');
+        
+        // 疾走(isStorm)または通常攻撃可能状態であればリーダーを攻撃可能
+        enemyHp = Math.max(0, enemyHp - selectedBoardCard.attack);
+        renderAll();
+
+        if (enemyHp <= 0) {
+            triggerGameSet(true); // 勝利
+        }
+    }
+
+    // 決着演出の開始
+    function triggerGameSet(isWin) {
+        closePauseMenu();
+        const gameSetEl = document.getElementById('gameset-screen');
+        gameSetEl.style.display = 'flex';
+
+        setTimeout(() => {
+            gameSetEl.style.display = 'none';
+            showResultScreen(isWin);
+        }, 2200);
+    }
+
+    // ★ リザルト表示とMP・グループ変動の保存（連勝数によるグループ昇格＆ボーナスMP適用）
+    function showResultScreen(isWin) {
+        const resultEl = document.getElementById('result-screen');
+        const titleEl = document.getElementById('result-title');
+        const scoreEl = document.getElementById('score-details');
+
+        resultEl.style.display = 'flex';
+
+        // 1. ユーザーデータの取得（未登録時はmp: 0, winStreak: 0）
+        let user = JSON.parse(localStorage.getItem('user') || '{"username": "プレイヤー", "mp": 0, "winStreak": 0}');
+        
+        if (isWin) {
+            user.winStreak = (user.winStreak || 0) + 1; // 勝利で連勝数+1
+        } else {
+            user.winStreak = 0; // 敗北で連勝数リセット
+        }
+
+        // 2. 所属グループおよび獲得MPの計算（エメラルド: 100, トパーズ: 110, ルビー: 120...）
+        const groupInfo = typeof getGroupInfo === 'function' ? getGroupInfo(user.winStreak) : { name: 'エメラルド', mpBonus: 100, color: '#48bb78', icon: '🟢' };
+        let earnedMp = isWin ? groupInfo.mpBonus : 0;
+        
+        user.mp = (user.mp || 0) + earnedMp;
+
+        // 3. データの保存
+        localStorage.setItem('user', JSON.stringify(user));
+
+        // 4. 最新のランク情報を計算
+        const rankInfo = typeof getRankInfo === 'function' ? getRankInfo(user.mp) : { name: 'Beginner 0', nextMp: 200 };
+
+        if (isWin) {
+            titleEl.className = 'result-title win';
+            titleEl.innerText = 'WIN';
+            scoreEl.innerHTML = `
+                <div class="score-row"><span>所属グループ</span><span style="color:${groupInfo.color}">${groupInfo.icon} ${groupInfo.name}</span></div>
+                <div class="score-row"><span>現在の連勝数</span><span>${user.winStreak} 連勝中</span></div>
+                <div class="score-row"><span>バトル勝利報酬</span><span style="color:#ffd700;">+${earnedMp} MP</span></div>
+                <div class="score-row" style="margin-top:10px; font-weight:bold; color:#ffd700;">
+                    <span>現在のランク / TOTAL</span><span>${rankInfo.name} (${user.mp} MP)</span>
+                </div>
+                <div class="score-row" style="margin-top:5px; color:#a792ba;">
+                    <span>NEXT昇格まで</span><span>あと ${rankInfo.nextMp} MP</span>
+                </div>
+            `;
+        } else {
+            titleEl.className = 'result-title lose';
+            titleEl.innerText = 'RESULT';
+            scoreEl.innerHTML = `
+                <div class="score-row"><span>獲得 MP</span><span>+0 MP</span></div>
+                <div class="score-row"><span>現在のランク</span><span>${rankInfo.name} (${user.mp} MP)</span></div>
+                <div class="score-row" style="margin-top:10px; color:#a792ba;"><span>連勝リセット</span><span>0 連勝</span></div>
+            `;
+        }
+    }
+
+    function endTurn() {
+        if (maxPp < 10) maxPp++;
+        currentPp = maxPp;
+        myHandCards.push({ id: Date.now(), name: '漆黒の竜', cost: 3, attack: 3, hp: 3, desc: '強力な竜' });
+        renderAll();
+    }
+
+    function openPauseMenu() { document.getElementById('pause-menu-modal').style.display = 'flex'; }
+    function closePauseMenu() { document.getElementById('pause-menu-modal').style.display = 'none'; }
+</script>
+
+</body>
+</html>
